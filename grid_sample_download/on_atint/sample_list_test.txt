@@ -1,0 +1,3 @@
+user.brottler.mc16_13TeV.308092.Zee2jets_Sh221.CxAOD_SUSY2.e5767_s3126_r9364_p3990.BBLL_V03_CxAOD.root
+user.brottler.mc16_13TeV.308093.Zmumu2jets_Sh221.CxAOD_SUSY2.e5767_s3126_r9364_p3990.BBLL_V03_CxAOD.root
+user.brottler.mc16_13TeV.308094.Ztautau2jets_Sh221.CxAOD_SUSY2.e5767_s3126_r9364_p3990.BBLL_V03_CxAOD.root

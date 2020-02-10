@@ -1,0 +1,15 @@
+executable = get_sample.sh
+arguments = $(sample_name) /home/yangz/tools/HEP-tools/grid_sample_download/test/downloads
+
+universe = vanilla
+
+log = logs/$(sample_name).log
+output = logs/$(sample_name).out
+error = logs/$(sample_name).err
+
+request_cpus = 1
+request_memory = 500MB
+
+JobBatchName = download_$(sample_name)
+
+queue sample_name from sample_list_test.txt
