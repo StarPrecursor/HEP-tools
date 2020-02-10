@@ -7,7 +7,7 @@ Handy tool to download grid samples to local.
 ```
 mkdir run
 ```
-* Copy files in src to "run" and go to "run"
+* Copy files in on_atint (or folder for other platform) to "run" and go to "run"
 ```
 cp src/* run
 cd run
