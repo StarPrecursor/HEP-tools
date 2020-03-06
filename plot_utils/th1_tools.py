@@ -1,23 +1,22 @@
 import copy
+import json
+import math
 import os
 from typing import Dict, List, Union
-import json
 
 import ROOT
 
 Cfg_Dict = Dict[str, Union[int, float, str, Dict[str, Union[int, float, str]]]]
 
-class hist_collection(object):
+class HistCollection(object):
   """Collection of histograms."""
 
-  def __init__(
-    self,
-    hist_list:List[ROOT.TH1],
-    collection_name:str='hist collection',
-    collection_title:str='hist collection',
-    create_new_canvas:bool=False,
-    canvas:Union[ROOT.TCanvas, None]=None
-    ) -> None:
+  def __init__(self,
+               hist_list:List[ROOT.TH1],
+               collection_name:str='hist collection',
+               collection_title:str='hist collection',
+               create_new_canvas:bool=False,
+               canvas:Union[ROOT.TCanvas, None]=None) -> None:
     self.canvas=canvas
     self.collection_name = collection_name
     self.collection_title = collection_title
@@ -34,50 +33,66 @@ class hist_collection(object):
 
   def create_canvas(self) -> None:
     self.canvas=ROOT.TCanvas(
-      self.collection_name, self.collection_title, 1600, 1000)
+      self.collection_name+"_col", self.collection_title+"_col", 1600, 1000)
 
 
-  def draw(
-    self,
-    config_str:str="",
-    legend_title:str="legend title",
-    draw_norm:bool=False,
-    norm_factor:float=1.
-    ) -> None:
+  def draw(self,
+           config_str:str="",
+           legend_title:str="legend title",
+           legend_paras:list=[0.75,0.75,0.9,0.9],
+           draw_norm:bool=False,
+           norm_factor:float=1.
+           ) -> None:
     self.canvas.cd()
     maximum_height = -1e10
+    x_min_use = math.inf
+    x_max_use = -math.inf
     for hist in self._hist_list:
       if draw_norm:
+        hist.update_config('y_axis', 'SetTitle', "")
         total_weight = hist.get_hist().Integral("width")
         if total_weight != 0:
           hist.get_hist().Scale(1/total_weight)
+      # find non-zero-bin range along x axis
+      x_min = hist.get_hist().FindFirstBinAbove(0)
+      x_max = hist.get_hist().FindLastBinAbove(0)
+      if x_min < x_min_use: x_min_use = x_min
+      if x_max > x_max_use: x_max_use = x_max
+      # find highest value along y axis
       current_height = hist.get_hist().GetMaximum()
       if current_height > maximum_height:
         maximum_height = current_height
       hist.set_canvas(self.canvas)
       hist.draw(config_str + "same")
-    self._hist_list[0].get_hist().GetYaxis().SetRangeUser(0, maximum_height*1.2)
-    self.canvas.BuildLegend(0.75, 0.65, 0.9, 0.9, legend_title)
+    if x_min_use - 1 > 0: x_min_use -= 1
+    if x_max_use + 1 < hist.get_hist().GetNbinsX(): x_max_use += 1
+    self._hist_list[0].get_hist().GetXaxis().SetRange(x_min_use, x_max_use)
+    self._hist_list[0].get_hist().GetYaxis().SetRangeUser(0, maximum_height*1.4)
+    self.canvas.BuildLegend(legend_paras[0], legend_paras[1], legend_paras[2],
+                            legend_paras[3], legend_title)
     self._hist_list[0].get_hist().SetTitle(self.collection_name)
     self.canvas.Update()
 
 
-  def save(
-    self,
-    save_dir:Union[str, None]=None,
-    save_file_name:str=None,
-    save_format:str='png'
-    ) -> None:
+  def save(self,
+           save_dir:Union[str, None]=None,
+           save_file_name:str=None,
+           save_format:str='png'
+           ) -> None:
     if save_dir is None:
-      save_dir = os.getcwd() + "/hists"
+      save_dir = os.getcwd() + "/hist_cols"
+    else:
+      if not os.path.isabs(save_dir):
+        save_dir = "./" + save_dir
     if save_file_name is None:
       save_file_name = self.collection_name
     if not os.path.exists(save_dir):
+      print("save_dir:", save_dir)
       os.makedirs(save_dir)
     save_path = save_dir + "/" + save_file_name + "." + save_format
     self.canvas.SaveAs(save_path)
 
-class th1(object):
+class TH1Tool(object):
   """ROOT TH1 class wrapper for easy handling.
 
   Note:
@@ -88,17 +103,15 @@ class th1(object):
   _hist = None
   _config_applied = False
 
-  def __init__(
-    self,
-    name:str,
-    title:str,
-    nbin:int=50,
-    xlow:float=-100,
-    xup:float=100,
-    config:Union[str, Cfg_Dict]={},
-    create_new_canvas:'bool'=False,
-    canvas:'TCanvas'=None
-    ) -> None:
+  def __init__(self,
+               name:str,
+               title:str,
+               nbin:int=50,
+               xlow:float=-100,
+               xup:float=100,
+               config:Union[str, Cfg_Dict]={},
+               create_new_canvas:'bool'=False,
+               canvas:'TCanvas'=None) -> None:
     self._hist=None
     self.name=name
     self.title=title
@@ -109,6 +122,13 @@ class th1(object):
 
 
   def apply_config(self) -> None:
+    """Applys config associate with TH1Tool object.
+    
+    Note:
+      When Draw() function called, if self._config_applied is False.
+      This function will be called automatically before make plot.
+
+    """
     config = self.config
     for section in config:
       if section == 'hist':
@@ -131,12 +151,10 @@ class th1(object):
       self.apply_single_config(self._hist, "hist", item)
 
 
-  def apply_config_axis(
-    self,
-    axis:ROOT.TAxis,
-    axis_section:str,
-    config:Cfg_Dict
-    ) -> None:
+  def apply_config_axis(self,
+                        axis:ROOT.TAxis,
+                        axis_section:str,
+                        config:Cfg_Dict) -> None:
     """Applys axis config."""
     for item in config:
       self.apply_single_config(axis, axis_section, item)
@@ -154,12 +172,10 @@ class th1(object):
     self.apply_config_axis(y_axis, 'y_axis', config)
 
 
-  def apply_single_config(
-    self,
-    apply_object:Union[ROOT.TH1, ROOT.TAxis],
-    section_name:str,
-    config_name:str
-    ) -> None:
+  def apply_single_config(self,
+                          apply_object:Union[ROOT.TH1, ROOT.TAxis],
+                          section_name:str,
+                          config_name:str) -> None:
     """Applys single config with mutable quantity inputs."""
     config_value = self.config[section_name][config_name]
     if type(config_value) is list:
@@ -190,10 +206,16 @@ class th1(object):
 
 
   def create_canvas(self) -> None:
-    self.canvas=ROOT.TCanvas(self.name, self.title)
+    self.canvas=ROOT.TCanvas(self.name+"_th1", self.title+"_th1")
 
 
   def draw(self, config_str:str=None) -> None:
+    """Makes the plot.
+    
+    Note:
+      If self._config_appolied is False, self.apply_config() will be called.
+    
+    """
     if self.canvas is not None:
       self.canvas.cd()
     else:
@@ -216,6 +238,14 @@ class th1(object):
 
 
   def parse_config(self, config:Union[str, Cfg_Dict]) -> Cfg_Dict:
+    """Reads json config.
+    
+    Note:
+      If input is string (config file path), the config file will be open and
+      json config will be read.
+      If input is Cfg_Dict already, function will return a deep copy of input.
+    
+    """
     if type(config) is dict:
       return copy.deepcopy(config)
     elif type(config) is str:
@@ -224,14 +254,16 @@ class th1(object):
     else:
       ValueError("Unsupported config input type.")
 
-  def save(
-    self,
-    save_dir:Union[str, None]=None,
-    save_file_name:Union[str, None]=None,
-    save_format:[str]='png'
-    ) -> None:
+  def save(self,
+           save_dir:Union[str, None]=None,
+           save_file_name:Union[str, None]=None,
+           save_format:[str]='png') -> None:
+    """Saves plots to specified path."""
     if save_dir is None:
-      save_dir = os.getcwd() + "/hists"
+      save_dir = "./hists"
+    else:
+      if not os.path.isabs(save_dir):
+        save_dir = "./" + save_dir
     if save_file_name is None:
       save_file_name = self.name
     if not os.path.exists(save_dir):
@@ -254,12 +286,10 @@ class th1(object):
     self._hist = hist
 
 
-  def update_config(
-    self,
-    section:str,
-    item:str,
-    value:Union[str, int, float, list]
-    ) -> None:
+  def update_config(self,
+                    section:str,
+                    item:str,
+                    value:Union[str, int, float, list]) -> None:
     """Updates certain configuration.
 
     Note:
@@ -272,51 +302,34 @@ class th1(object):
     self.config.update({section: section_value})
     self._config_applied = False
 
-class th1d(th1):
+class TH1DTool(TH1Tool):
   """ROOT TH1D class wrapper for easy handling."""
 
-  def __init__(
-    self,
-    name:str,
-    title:str,
-    nbin:int=50,
-    xlow:float=-100,
-    xup:float=100,
-    config:Cfg_Dict={},
-    create_new_canvas:bool=False,
-    canvas:Union[ROOT.TCanvas, None]=None
-    ) -> None:
-    th1.__init__(self, name, title, nbin=nbin, xlow=xlow, xup=xup,
+  def __init__(self,
+               name:str,
+               title:str,
+               nbin:int=50,
+               xlow:float=-100,
+               xup:float=100,
+               config:Cfg_Dict={},
+               create_new_canvas:bool=False,
+               canvas:Union[ROOT.TCanvas, None]=None) -> None:
+    TH1Tool.__init__(self, name, title, nbin=nbin, xlow=xlow, xup=xup,
       config=config, create_new_canvas=create_new_canvas, canvas=canvas)
     self._hist=ROOT.TH1D(name, title, nbin, xlow, xup)
 
-class th1f(th1):
+class TH1FTool(TH1Tool):
   """ROOT TH1F class wrapper for easy handling."""
 
-  def __init__(
-    self,
-    name:str,
-    title:str,
-    nbin:int=50,
-    xlow:float=-100,
-    xup:float=100,
-    config:Cfg_Dict={},
-    create_new_canvas:bool=False,
-    canvas:Union[ROOT.TCanvas, None]=None
-    ) -> None:
-    th1.__init__(self, name, title, nbin=nbin, xlow=xlow, xup=xup,
+  def __init__(self,
+               name:str,
+               title:str,
+               nbin:int=50,
+               xlow:float=-100,
+               xup:float=100,
+               config:Cfg_Dict={},
+               create_new_canvas:bool=False,
+               canvas:Union[ROOT.TCanvas, None]=None) -> None:
+    TH1Tool.__init__(self, name, title, nbin=nbin, xlow=xlow, xup=xup,
       config=config, create_new_canvas=create_new_canvas, canvas=canvas)
     self._hist=ROOT.TH1F(name, title, nbin, xlow, xup)
-
-def has_sub_string(
-  check_string:str,
-  sub_strings:Union[str, list]
-  ) -> bool:
-  if type(sub_strings) is list:
-    for sub_string in sub_strings:
-      if sub_string in check_string:
-        return True
-  elif type(sub_strings) is str:
-    if sub_strings in check_string:
-      return True
-  return False
