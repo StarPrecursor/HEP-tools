@@ -1,0 +1,24 @@
+{
+  "hist": {
+    "SetXTitle": "x axis",
+    "SetYTitle": "y axis",
+    "SetLineColor": 2,
+    "SetLineWidth": 2,
+    "SetStats": 0,
+    "FillRandom": "gaus"
+  },
+  "x_axis":{
+    "SetTitle": "x axis",
+    "SetTitleSize": 0.04,
+    "SetTitleOffset": 1,
+    "SetRangeUser": [-3,3]
+  },
+  "y_axis":{
+    "SetTitle": "y axis",
+    "SetTitleSize": 0.04,
+    "SetTitleOffset": 1
+  },
+  "test":{
+    "test_list": [1,4,60,"2345"]
+  }
+}
