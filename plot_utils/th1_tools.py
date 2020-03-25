@@ -36,18 +36,22 @@ class HistCollection(object):
       self.collection_name+"_col", self.collection_title+"_col", 1600, 1000)
 
 
-  def draw(self,
-           config_str:str="",
-           legend_title:str="legend title",
-           legend_paras:list=[0.75,0.75,0.9,0.9],
-           draw_norm:bool=False,
-           norm_factor:float=1.
-           ) -> None:
+  def draw(
+    self,
+    config_str:str="",
+    legend_title:str="legend title",
+    legend_paras:list=[0.75,0.75,0.9,0.9],
+    draw_norm:bool=False,
+    remove_empty_ends:bool=False,
+    norm_factor:float=1.) -> None:
     self.canvas.cd()
     maximum_height = -1e10
     x_min_use = math.inf
     x_max_use = -math.inf
     for hist in self._hist_list:
+      # set stats 0
+      hist.get_hist().SetStats(0)
+      # 
       if draw_norm:
         hist.update_config('y_axis', 'SetTitle', "")
         total_weight = hist.get_hist().Integral("width")
@@ -66,7 +70,8 @@ class HistCollection(object):
       hist.draw(config_str + "same")
     if x_min_use - 1 > 0: x_min_use -= 1
     if x_max_use + 1 < hist.get_hist().GetNbinsX(): x_max_use += 1
-    self._hist_list[0].get_hist().GetXaxis().SetRange(x_min_use, x_max_use)
+    if remove_empty_ends:
+      self._hist_list[0].get_hist().GetXaxis().SetRange(x_min_use, x_max_use)
     self._hist_list[0].get_hist().GetYaxis().SetRangeUser(0, maximum_height*1.4)
     self.canvas.BuildLegend(legend_paras[0], legend_paras[1], legend_paras[2],
                             legend_paras[3], legend_title)
@@ -100,18 +105,16 @@ class TH1Tool(object):
 
   """
 
-  _hist = None
-  _config_applied = False
-
-  def __init__(self,
-               name:str,
-               title:str,
-               nbin:int=50,
-               xlow:float=-100,
-               xup:float=100,
-               config:Union[str, Cfg_Dict]={},
-               create_new_canvas:'bool'=False,
-               canvas:'TCanvas'=None) -> None:
+  def __init__(
+    self,
+    name:str,
+    title:str,
+    nbin:int=50,
+    xlow:float=-100,
+    xup:float=100,
+    config:Union[str, Cfg_Dict]={},
+    create_new_canvas:'bool'=False,
+    canvas:'TCanvas'=None) -> None:
     self._hist=None
     self.name=name
     self.title=title
@@ -119,7 +122,18 @@ class TH1Tool(object):
     if create_new_canvas:
       self.create_canvas()
     self.config = self.parse_config(config)
+    self._config_applied = False
 
+
+  def __deepcopy__(self, memo) -> "TH1Tool":
+    cls = self.__class__
+    retrun_obj = cls.__new__(cls)
+    memo[id(self)] = retrun_obj
+    for key, value in self.__dict__.items():
+      if key == "_hist": setattr(retrun_obj, "_hist", self._hist.Clone())
+      elif key == "canvas": setattr(retrun_obj, "canvas", None)
+      else: setattr(retrun_obj, key, copy.deepcopy(value, memo))
+    return retrun_obj
 
   def apply_config(self) -> None:
     """Applys config associate with TH1Tool object.
@@ -205,8 +219,17 @@ class TH1Tool(object):
       ValueError("Failed setting for:", config_name)
 
 
+  def fill_hist(self, fill_array, weight_array=None):
+    if weight_array is None:
+      for element in fill_array:
+        self._hist.Fill(element)
+    else:
+      for element, weight in zip(fill_array, weight_array):
+        self._hist.Fill(element, weight)
+
+
   def create_canvas(self) -> None:
-    self.canvas=ROOT.TCanvas(self.name+"_th1", self.title+"_th1")
+    self.canvas=ROOT.TCanvas(self.name+"_th1", self.title+"_th1", 1600, 1000)
 
 
   def draw(self, config_str:str=None) -> None:
@@ -254,10 +277,12 @@ class TH1Tool(object):
     else:
       ValueError("Unsupported config input type.")
 
-  def save(self,
-           save_dir:Union[str, None]=None,
-           save_file_name:Union[str, None]=None,
-           save_format:[str]='png') -> None:
+
+  def save(
+    self,
+    save_dir:Union[str, None]=None,
+    save_file_name:Union[str, None]=None,
+    save_format:[str]='png') -> None:
     """Saves plots to specified path."""
     if save_dir is None:
       save_dir = "./hists"
@@ -277,7 +302,7 @@ class TH1Tool(object):
 
 
   def set_config(self, config:Cfg_Dict) -> None:
-    self.config = self.parse_config(config)
+    self.config.update(self.parse_config(config))
     self._config_applied = False
 
 
@@ -297,7 +322,11 @@ class TH1Tool(object):
       If item doesn't exist, value will be created with new value.
     
     """
-    section_value = self.config[section]
+    section_value = {}
+    try:
+      section_value = self.config[section]
+    except:
+      pass
     section_value.update({item:value})
     self.config.update({section: section_value})
     self._config_applied = False
