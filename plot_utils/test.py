@@ -1,13 +1,11 @@
 import json
 
-from ROOT import TH1F
-from ROOT import kBlue
-
 from plot_utils import *
+from ROOT import TH1F, kBlue
 from th1_tools import *
 
 with open("test_plot_config.json") as plot_config_file:
-  config=json.load(plot_config_file)
+    config = json.load(plot_config_file)
 #### debug ####
 print(json.dumps(config))
 
@@ -26,8 +24,8 @@ h2.apply_config()
 #h2.draw("same")
 
 #test_canvas.BuildLegend(0.75, 0.75, 0.9, 0.9, "test legend")  #
-  # BuildLegend (Double_t x1=0.3, Double_t y1=0.21, Double_t x2=0.3, 
-  # Double_t y2=0.21, const char *title="", Option_t *option="")
+# BuildLegend (Double_t x1=0.3, Double_t y1=0.21, Double_t x2=0.3,
+# Double_t y2=0.21, const char *title="", Option_t *option="")
 #test_canvas.Update()
 
 hist_col = HistCollection([h1, h2])
