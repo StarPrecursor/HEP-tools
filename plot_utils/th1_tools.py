@@ -2,10 +2,11 @@ import copy
 import json
 import math
 import os
-from typing import Dict, List, Union
 import warnings
+from typing import Dict, List, Union
 
 import ROOT
+from HEPTools.plot_utils import plot_utils
 
 Cfg_Dict = Dict[str, Union[int, float, str, Dict[str, Union[int, float, str]]]]
 
@@ -13,12 +14,12 @@ Cfg_Dict = Dict[str, Union[int, float, str, Dict[str, Union[int, float, str]]]]
 class HistCollection(object):
     """Collection of histograms."""
     def __init__(self,
-                 hist_list: list,
+                 hist_list: List["TH1Tool"],
                  name: str = 'hist collection',
                  title: str = 'hist collection',
                  create_new_canvas: bool = False,
                  canvas: Union[ROOT.TCanvas, None] = None) -> None:
-        self.canvas = canvas
+        self._canvas = canvas
         self.name = name
         self.title = title
         self._hist_list = []
@@ -32,8 +33,8 @@ class HistCollection(object):
             self.create_canvas()
 
     def create_canvas(self) -> None:
-        self.canvas = ROOT.TCanvas(self.name + "_col", self.title + "_col",
-                                   800, 600)
+        self._canvas = ROOT.TCanvas(self.name + "_col", self.title + "_col",
+                                    800, 600)
 
     def draw(self,
              config_str: str = "",
@@ -42,7 +43,7 @@ class HistCollection(object):
              draw_norm: bool = False,
              remove_empty_ends: bool = False,
              norm_factor: float = 1.) -> None:
-        self.canvas.cd()
+        self._canvas.cd()
         maximum_height = -1e10
         x_min_use = math.inf
         x_max_use = -math.inf
@@ -64,7 +65,7 @@ class HistCollection(object):
             current_height = hist.get_hist().GetMaximum()
             if current_height > maximum_height:
                 maximum_height = current_height
-            hist.set_canvas(self.canvas)
+            hist.set_canvas(self._canvas)
             hist.draw(config_str + "same")
         if x_min_use - 1 > 0: x_min_use -= 1
         if x_max_use + 1 < hist.get_hist().GetNbinsX(): x_max_use += 1
@@ -73,10 +74,11 @@ class HistCollection(object):
                 x_min_use, x_max_use)
         self._hist_list[0].get_hist().GetYaxis().SetRangeUser(
             0, maximum_height * 1.4)
-        self.canvas.BuildLegend(legend_paras[0], legend_paras[1],
-                                legend_paras[2], legend_paras[3], legend_title)
+        self._canvas.BuildLegend(legend_paras[0], legend_paras[1],
+                                 legend_paras[2], legend_paras[3],
+                                 legend_title)
         self._hist_list[0].get_hist().SetTitle(self.name)
-        self.canvas.Update()
+        self._canvas.Update()
 
     def save(self,
              save_dir: Union[str, None] = None,
@@ -93,7 +95,7 @@ class HistCollection(object):
             print("save_dir:", save_dir)
             os.makedirs(save_dir)
         save_path = save_dir + "/" + save_file_name + "." + save_format
-        self.canvas.SaveAs(save_path)
+        self._canvas.SaveAs(save_path)
 
 
 class HistGallery(object):
@@ -116,8 +118,8 @@ class HistGallery(object):
         self.n_cols = n_cols
         assert n_rows > 0
         self._hist_dict = {}
-        self.canvas = canvas
-        if self.canvas is None:
+        self._canvas = canvas
+        if self._canvas is None:
             self.create_canvas()
         self.create_gallery()
 
@@ -135,11 +137,11 @@ class HistGallery(object):
             self._hist_dict[(row - 1) * self.n_cols + col] = hist_obj
 
     def create_canvas(self) -> None:
-        self.canvas = ROOT.TCanvas(self.name + "_farmland",
-                                   self.title + "_farmland", 800, 600)
+        self._canvas = ROOT.TCanvas(self.name + "_farmland",
+                                    self.title + "_farmland", 800, 600)
 
     def create_gallery(self) -> None:
-        self.canvas.Divide(self.n_rows, self.n_cols)
+        self._canvas.Divide(self.n_rows, self.n_cols)
 
 
 class TH1Tool(object):
@@ -166,8 +168,8 @@ class TH1Tool(object):
         self._hist = None
         self.name = name
         self.title = title
-        self.canvas = canvas
-        self.canvas_id = canvas_id
+        self._canvas = canvas
+        self._canvas_id = canvas_id
         if create_new_canvas:
             self.create_canvas()
         self.config = self.parse_config(config)
@@ -271,13 +273,13 @@ class TH1Tool(object):
                      y1: float = 0.75,
                      x2: float = 0.9,
                      y2: float = 0.9) -> None:
-        self.canvas.BuildLegend(x1, y1, x2, y2)
-        self.canvas.Update()
+        self._canvas.BuildLegend(x1, y1, x2, y2)
+        self._canvas.Update()
 
     def create_canvas(self) -> None:
-        self.canvas = ROOT.TCanvas(self.name + "_th1", self.title + "_th1",
-                                   800, 600)
-        self.canvas_id = 0
+        self._canvas = ROOT.TCanvas(self.name + "_th1", self.title + "_th1",
+                                    800, 600)
+        self._canvas_id = 0
 
     def draw(self, config_str: str = "", log_scale=False) -> None:
         """Makes the plot.
@@ -289,18 +291,17 @@ class TH1Tool(object):
         # make sure weight is correct
         self.get_hist().SetDefaultSumw2()
         # make plot
-        if self.canvas is None:
+        if self._canvas is None:
             self.create_canvas()
-        print("## canvas_id ##", self.canvas_id)  #############
-        self.canvas.cd(self.canvas_id)
+        self._canvas.cd(self._canvas_id)
         if not self._config_applied:
             self.apply_config()
         if log_scale:
-            self.canvas.SetLogy(2)
+            self._canvas.SetLogy(2)
         else:
-            self.canvas.SetLogy(0)
+            self._canvas.SetLogy(0)
         self._hist.Draw(config_str)
-        self.canvas.Update()
+        self._canvas.Update()
 
     def fill_hist(self, fill_array, weight_array=None):
         if weight_array is None:
@@ -311,7 +312,7 @@ class TH1Tool(object):
                 self._hist.Fill(element, weight)
 
     def get_canvas(self) -> ROOT.TCanvas:
-        return self.canvas
+        return self._canvas
 
     def get_config(self) -> Cfg_Dict:
         return self.config
@@ -351,10 +352,10 @@ class TH1Tool(object):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         save_path = save_dir + "/" + save_file_name + "." + save_format
-        self.canvas.SaveAs(save_path)
+        self._canvas.SaveAs(save_path)
 
     def set_canvas(self, canvas: ROOT.TCanvas) -> None:
-        self.canvas = canvas
+        self._canvas = canvas
 
     def set_config(self, config: Cfg_Dict) -> None:
         self.config.update(self.parse_config(config))
@@ -453,6 +454,14 @@ class THStackTool(object):
         for hist in self._hist_list:
             self._hist_stack.Add(hist.get_hist())
 
+    def build_legend(self,
+                     x1: float = 0.8,
+                     y1: float = 0.75,
+                     x2: float = 0.9,
+                     y2: float = 0.9) -> None:
+        self._canvas.BuildLegend(x1, y1, x2, y2)
+        self._canvas.Update()
+
     def create_canvas(self) -> None:
         self._canvas = ROOT.TCanvas(self.name + "_stack",
                                     self.title + "_stack", 800, 600)
@@ -465,11 +474,27 @@ class THStackTool(object):
         else:
             self._canvas.SetLogy(0)
         self._hist_stack.Draw(draw_cfg)
-        self._canvas.BuildLegend(0.8, 0.75, 0.9, 0.9)
-        #ROOT.gStyle.SetPalette(ROOT.kBird)  # change back to default
+        self._canvas.Update()
+
+    def get_added_hists(self) -> ROOT.TH1:
+        return plot_utils.merge_hists(self._hist_list)
 
     def get_canvas(self) -> ROOT.TCanvas:
         return self._canvas
+
+    def get_hist_list(self) -> list:
+        """Returns a list of TH1Tool in self._hist_list"""
+        return self._hist_list
+
+    def get_hstack(self) -> ROOT.THStack:
+        return self._hist_stack
+
+    def get_total_weights(self) -> float:
+        """Returns sum of SumOfWeights of all histograms in self._hist_list"""
+        total_weights = 0
+        for hist in self._hist_list:
+            total_weights += hist.get_hist().GetSumOfWeights()
+        return total_weights
 
     def save(self,
              save_dir: Union[str, None] = None,
@@ -487,3 +512,6 @@ class THStackTool(object):
             os.makedirs(save_dir)
         save_path = save_dir + "/" + save_file_name + "." + save_format
         self._canvas.SaveAs(save_path)
+
+    def set_canvas(self, canvas: ROOT.TCanvas) -> None:
+        self._canvas = canvas

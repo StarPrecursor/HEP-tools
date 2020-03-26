@@ -1,14 +1,25 @@
 import copy
-from typing import Dict, Union
+from typing import Dict, List, Union
 
 import ROOT
+
+
+def get_highest_bin_value(hists:Union[list, "TH1Tool"]) -> float:
+    """Returns highest bin value among given hist list(s)"""
+    maximum_height = 0
+    if type(hists) is list:
+        merged_hist = merge_hists(hists)
+        maximum_height = merged_hist.GetMaximum()
+    else:
+        maximum_height = hists.get_hist().GetMaximum()
+    return maximum_height 
 
 
 def get_objects_from_file(root_file_path: str) -> dict:
     root_file = ROOT.TFile(root_file_path)
     keys = root_file.GetListOfKeys()
     object_dict = {}
-    for i, item in enumerate(keys):
+    for item in keys:
         current_object = item.ReadObj()
         current_object_name = current_object.GetName()
         object_dict[current_object_name] = copy.deepcopy(current_object)
@@ -38,3 +49,16 @@ def is_supported_hist(checked_object) -> bool:
         return True
     else:
         return False
+
+def merge_hists(hist_list:List["TH1Tool"]) -> ROOT.TH1:
+    """Returns merged input histograms."""
+    out_hist = None
+    merge_list = ROOT.TList()
+    for id, hist_tool in enumerate(hist_list):
+        hist = hist_tool.get_hist()
+        if id == 0:
+            out_hist = hist.Clone()
+            out_hist.Reset()
+        merge_list.Add(hist)
+    out_hist.Merge(merge_list)
+    return out_hist
