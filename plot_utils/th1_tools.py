@@ -3,6 +3,7 @@ import json
 import math
 import os
 from typing import Dict, List, Union
+import warnings
 
 import ROOT
 
@@ -12,14 +13,14 @@ Cfg_Dict = Dict[str, Union[int, float, str, Dict[str, Union[int, float, str]]]]
 class HistCollection(object):
     """Collection of histograms."""
     def __init__(self,
-                 hist_list: List[ROOT.TH1],
-                 collection_name: str = 'hist collection',
-                 collection_title: str = 'hist collection',
+                 hist_list: list,
+                 name: str = 'hist collection',
+                 title: str = 'hist collection',
                  create_new_canvas: bool = False,
                  canvas: Union[ROOT.TCanvas, None] = None) -> None:
         self.canvas = canvas
-        self.collection_name = collection_name
-        self.collection_title = collection_title
+        self.name = name
+        self.title = title
         self._hist_list = []
         for hist in hist_list:
             self._hist_list.append(copy.deepcopy(hist))
@@ -31,8 +32,8 @@ class HistCollection(object):
             self.create_canvas()
 
     def create_canvas(self) -> None:
-        self.canvas = ROOT.TCanvas(self.collection_name + "_col",
-                                   self.collection_title + "_col", 1600, 1000)
+        self.canvas = ROOT.TCanvas(self.name + "_col", self.title + "_col",
+                                   800, 600)
 
     def draw(self,
              config_str: str = "",
@@ -74,7 +75,7 @@ class HistCollection(object):
             0, maximum_height * 1.4)
         self.canvas.BuildLegend(legend_paras[0], legend_paras[1],
                                 legend_paras[2], legend_paras[3], legend_title)
-        self._hist_list[0].get_hist().SetTitle(self.collection_name)
+        self._hist_list[0].get_hist().SetTitle(self.name)
         self.canvas.Update()
 
     def save(self,
@@ -87,7 +88,7 @@ class HistCollection(object):
             if not os.path.isabs(save_dir):
                 save_dir = "./" + save_dir
         if save_file_name is None:
-            save_file_name = self.collection_name
+            save_file_name = self.name
         if not os.path.exists(save_dir):
             print("save_dir:", save_dir)
             os.makedirs(save_dir)
@@ -95,13 +96,59 @@ class HistCollection(object):
         self.canvas.SaveAs(save_path)
 
 
+class HistGallery(object):
+    """Organizer for multiple plots
+    
+    TODO: class still under development, need to decide whether to keep of discard
+
+    """
+    def __init__(self,
+                 name: str = 'hist farmland',
+                 title: str = 'hist farmland',
+                 n_rows: int = 1,
+                 n_cols: int = 1,
+                 canvas: Union[ROOT.TCanvas, None] = None) -> None:
+        super().__init__()
+        self.name = name
+        self.title = title
+        self.n_rows = n_rows
+        assert n_rows > 0
+        self.n_cols = n_cols
+        assert n_rows > 0
+        self._hist_dict = {}
+        self.canvas = canvas
+        if self.canvas is None:
+            self.create_canvas()
+        self.create_gallery()
+
+    def assign_hist(self,
+                    hist_obj: "TH1Tool",
+                    row: int = 1,
+                    col: int = 1) -> None:
+        if row >= self.n_rows or row < 0:
+            warnings.warn("row value out of range. assign_hist failed.")
+            return
+        elif col > -self.n_cols or col < 0:
+            warnings.warn("col value out of range. assign_hist failed.")
+            return
+        else:
+            self._hist_dict[(row - 1) * self.n_cols + col] = hist_obj
+
+    def create_canvas(self) -> None:
+        self.canvas = ROOT.TCanvas(self.name + "_farmland",
+                                   self.title + "_farmland", 800, 600)
+
+    def create_gallery(self) -> None:
+        self.canvas.Divide(self.n_rows, self.n_cols)
+
+
 class TH1Tool(object):
     """ROOT TH1 class wrapper for easy handling.
 
-  Note:
-    Base class, do not use directly
+    Note:
+        Base class, do not use directly
 
-  """
+    """
     def __init__(self,
                  name: str,
                  title: str,
@@ -110,11 +157,17 @@ class TH1Tool(object):
                  xup: float = 100,
                  config: Union[str, Cfg_Dict] = {},
                  create_new_canvas: 'bool' = False,
-                 canvas: 'TCanvas' = None) -> None:
+                 canvas: 'TCanvas' = None,
+                 canvas_id: int = 1) -> None:
+        """
+        Note:
+            canvas_id starts from 1
+        """
         self._hist = None
         self.name = name
         self.title = title
         self.canvas = canvas
+        self.canvas_id = canvas_id
         if create_new_canvas:
             self.create_canvas()
         self.config = self.parse_config(config)
@@ -133,11 +186,11 @@ class TH1Tool(object):
     def apply_config(self) -> None:
         """Applys config associate with TH1Tool object.
     
-    Note:
-      When Draw() function called, if self._config_applied is False.
-      This function will be called automatically before make plot.
+        Note:
+        When Draw() function called, if self._config_applied is False.
+        This function will be called automatically before make plot.
 
-    """
+        """
         config = self.config
         for section in config:
             if section == 'hist':
@@ -213,6 +266,42 @@ class TH1Tool(object):
         except:
             ValueError("Failed setting for:", config_name)
 
+    def build_legend(self,
+                     x1: float = 0.8,
+                     y1: float = 0.75,
+                     x2: float = 0.9,
+                     y2: float = 0.9) -> None:
+        self.canvas.BuildLegend(x1, y1, x2, y2)
+        self.canvas.Update()
+
+    def create_canvas(self) -> None:
+        self.canvas = ROOT.TCanvas(self.name + "_th1", self.title + "_th1",
+                                   800, 600)
+        self.canvas_id = 0
+
+    def draw(self, config_str: str = "", log_scale=False) -> None:
+        """Makes the plot.
+    
+        Note:
+        If self._config_appolied is False, self.apply_config() will be called.
+        
+        """
+        # make sure weight is correct
+        self.get_hist().SetDefaultSumw2()
+        # make plot
+        if self.canvas is None:
+            self.create_canvas()
+        print("## canvas_id ##", self.canvas_id)  #############
+        self.canvas.cd(self.canvas_id)
+        if not self._config_applied:
+            self.apply_config()
+        if log_scale:
+            self.canvas.SetLogy(2)
+        else:
+            self.canvas.SetLogy(0)
+        self._hist.Draw(config_str)
+        self.canvas.Update()
+
     def fill_hist(self, fill_array, weight_array=None):
         if weight_array is None:
             for element in fill_array:
@@ -221,28 +310,8 @@ class TH1Tool(object):
             for element, weight in zip(fill_array, weight_array):
                 self._hist.Fill(element, weight)
 
-    def create_canvas(self) -> None:
-        self.canvas = ROOT.TCanvas(self.name + "_th1", self.title + "_th1",
-                                   1600, 1000)
-
-    def draw(self, config_str: str = None) -> None:
-        """Makes the plot.
-    
-    Note:
-      If self._config_appolied is False, self.apply_config() will be called.
-    
-    """
-        if self.canvas is not None:
-            self.canvas.cd()
-        else:
-            self.create_canvas()
-        if not self._config_applied:
-            self.apply_config()
-        if config_str is not None:
-            self._hist.Draw(config_str)
-        else:
-            self._hist.Draw()
-        self.canvas.Update()
+    def get_canvas(self) -> ROOT.TCanvas:
+        return self.canvas
 
     def get_config(self) -> Cfg_Dict:
         return self.config
@@ -253,12 +322,12 @@ class TH1Tool(object):
     def parse_config(self, config: Union[str, Cfg_Dict]) -> Cfg_Dict:
         """Reads json config.
     
-    Note:
-      If input is string (config file path), the config file will be open and
-      json config will be read.
-      If input is Cfg_Dict already, function will return a deep copy of input.
-    
-    """
+        Note:
+        If input is string (config file path), the config file will be open and
+        json config will be read.
+        If input is Cfg_Dict already, function will return a deep copy of input.
+        
+        """
         if type(config) is dict:
             return copy.deepcopy(config)
         elif type(config) is str:
@@ -299,11 +368,11 @@ class TH1Tool(object):
                       value: Union[str, int, float, list]) -> None:
         """Updates certain configuration.
 
-    Note:
-      If item existed, value will be updated to new value.
-      If item doesn't exist, value will be created with new value.
-    
-    """
+        Note:
+        If item existed, value will be updated to new value.
+        If item doesn't exist, value will be created with new value.
+        
+        """
         section_value = {}
         try:
             section_value = self.config[section]
@@ -324,16 +393,17 @@ class TH1DTool(TH1Tool):
                  xup: float = 100,
                  config: Cfg_Dict = {},
                  create_new_canvas: bool = False,
-                 canvas: Union[ROOT.TCanvas, None] = None) -> None:
-        TH1Tool.__init__(self,
-                         name,
+                 canvas: Union[ROOT.TCanvas, None] = None,
+                 canvas_id: int = 1) -> None:
+        super().__init__(name,
                          title,
                          nbin=nbin,
                          xlow=xlow,
                          xup=xup,
                          config=config,
                          create_new_canvas=create_new_canvas,
-                         canvas=canvas)
+                         canvas=canvas,
+                         canvas_id=canvas_id)
         self._hist = ROOT.TH1D(name, title, nbin, xlow, xup)
 
 
@@ -347,14 +417,73 @@ class TH1FTool(TH1Tool):
                  xup: float = 100,
                  config: Cfg_Dict = {},
                  create_new_canvas: bool = False,
-                 canvas: Union[ROOT.TCanvas, None] = None) -> None:
-        TH1Tool.__init__(self,
-                         name,
+                 canvas: Union[ROOT.TCanvas, None] = None,
+                 canvas_id: int = 1) -> None:
+        super().__init__(name,
                          title,
                          nbin=nbin,
                          xlow=xlow,
                          xup=xup,
                          config=config,
                          create_new_canvas=create_new_canvas,
-                         canvas=canvas)
+                         canvas=canvas,
+                         canvas_id=canvas_id)
         self._hist = ROOT.TH1F(name, title, nbin, xlow, xup)
+
+
+class THStackTool(object):
+    """ROOT THStack class wrapper for easy handing"""
+    def __init__(self,
+                 name: str,
+                 title: str,
+                 hist_list: List["TH1Tool"],
+                 create_new_canvas: bool = False,
+                 canvas: Union[ROOT.TCanvas, None] = None) -> None:
+        super().__init__()
+        self.name = name
+        self.title = title
+        self._hist_list = []
+        for hist in hist_list:
+            self._hist_list.append(copy.deepcopy(hist))
+        self.create_new_canvas = create_new_canvas
+        self._canvas = canvas
+        if create_new_canvas or (canvas is None):
+            self.create_canvas()
+        self._hist_stack = ROOT.THStack(name, title)
+        for hist in self._hist_list:
+            self._hist_stack.Add(hist.get_hist())
+
+    def create_canvas(self) -> None:
+        self._canvas = ROOT.TCanvas(self.name + "_stack",
+                                    self.title + "_stack", 800, 600)
+
+    def draw(self, draw_cfg="", log_scale=False):
+        ROOT.gStyle.SetPalette(ROOT.kPastel)
+        self._canvas.cd()
+        if log_scale:
+            self._canvas.SetLogy(2)
+        else:
+            self._canvas.SetLogy(0)
+        self._hist_stack.Draw(draw_cfg)
+        self._canvas.BuildLegend(0.8, 0.75, 0.9, 0.9)
+        #ROOT.gStyle.SetPalette(ROOT.kBird)  # change back to default
+
+    def get_canvas(self) -> ROOT.TCanvas:
+        return self._canvas
+
+    def save(self,
+             save_dir: Union[str, None] = None,
+             save_file_name: str = None,
+             save_format: str = 'png') -> None:
+        if save_dir is None:
+            save_dir = os.getcwd() + "/hist_stacks"
+        else:
+            if not os.path.isabs(save_dir):
+                save_dir = "./" + save_dir
+        if save_file_name is None:
+            save_file_name = self.name
+        if not os.path.exists(save_dir):
+            print("save_dir:", save_dir)
+            os.makedirs(save_dir)
+        save_path = save_dir + "/" + save_file_name + "." + save_format
+        self._canvas.SaveAs(save_path)
