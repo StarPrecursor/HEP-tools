@@ -298,8 +298,6 @@ class TH1Tool(object):
             self.apply_config()
         if log_scale:
             self._canvas.SetLogy(2)
-        else:
-            self._canvas.SetLogy(0)
         self._hist.Draw(config_str)
         self._canvas.Update()
 
@@ -471,8 +469,6 @@ class THStackTool(object):
         self._canvas.cd()
         if log_scale:
             self._canvas.SetLogy(2)
-        else:
-            self._canvas.SetLogy(0)
         self._hist_stack.Draw(draw_cfg)
         self._canvas.Update()
 
