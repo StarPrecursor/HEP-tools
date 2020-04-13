@@ -404,7 +404,14 @@ class TH1DTool(TH1Tool):
                          canvas=canvas,
                          canvas_id=canvas_id)
         self._hist = ROOT.TH1D(name, title, nbin, xlow, xup)
-
+        self.nbin = nbin
+        self.xlow = xlow
+        self.xup = xup
+        
+    def reinitial_hist_with_fill_array(self, fill_array):
+        xlow = math.floor(min(fill_array))
+        xup = math.ceil(max(fill_array))
+        self._hist = ROOT.TH1D(self.name, self.title, self.nbin, xlow, xup)
 
 class TH1FTool(TH1Tool):
     """ROOT TH1F class wrapper for easy handling."""
@@ -428,6 +435,14 @@ class TH1FTool(TH1Tool):
                          canvas=canvas,
                          canvas_id=canvas_id)
         self._hist = ROOT.TH1F(name, title, nbin, xlow, xup)
+        self.nbin = nbin
+        self.xlow = xlow
+        self.xup = xup
+    
+    def reinitial_hist_with_fill_array(self, fill_array):
+        xlow = math.floor(min(fill_array))
+        xup = math.ceil(max(fill_array))
+        self._hist = ROOT.TH1F(self.name, self.title, self.nbin, xlow, xup)
 
 
 class THStackTool(object):
