@@ -16,6 +16,7 @@ def get_highest_bin_value(hists:Union[list, "TH1Tool"]) -> float:
 
 
 def get_objects_from_file(root_file_path: str) -> dict:
+    """Returns dict of all objects in the root file."""
     root_file = ROOT.TFile(root_file_path)
     keys = root_file.GetListOfKeys()
     object_dict = {}
@@ -27,6 +28,13 @@ def get_objects_from_file(root_file_path: str) -> dict:
 
 
 def has_sub_string(check_string: str, sub_strings: Union[str, list]) -> bool:
+    """Checks whether the sub_strings in the check_string.
+    
+    Note:
+        If sub_strings is a list and there is at least one substring in
+    check_string, the function will return True.
+
+    """
     if type(sub_strings) is list:
         for sub_string in sub_strings:
             if sub_string in check_string:
