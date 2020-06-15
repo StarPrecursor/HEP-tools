@@ -4,7 +4,7 @@ from typing import Dict, List, Union
 import ROOT
 
 
-def get_highest_bin_value(hists:Union[list, "TH1Tool"]) -> float:
+def get_highest_bin_value(hists: Union[list, "TH1Tool"]) -> float:
     """Returns highest bin value among given hist list(s)"""
     maximum_height = 0
     if type(hists) is list:
@@ -12,7 +12,7 @@ def get_highest_bin_value(hists:Union[list, "TH1Tool"]) -> float:
         maximum_height = merged_hist.GetMaximum()
     else:
         maximum_height = hists.get_hist().GetMaximum()
-    return maximum_height 
+    return maximum_height
 
 
 def get_objects_from_file(root_file_path: str) -> dict:
@@ -58,7 +58,8 @@ def is_supported_hist(checked_object) -> bool:
     else:
         return False
 
-def merge_hists(hist_list:List["TH1Tool"]) -> ROOT.TH1:
+
+def merge_hists(hist_list: List["TH1Tool"]) -> ROOT.TH1:
     """Returns merged input histograms."""
     out_hist = None
     merge_list = ROOT.TList()

@@ -19,12 +19,13 @@ class HistCollection(object):
     """
 
     def __init__(
-            self,
-            hist_list: List["TH1Tool"],
-            name: str = 'hist collection',
-            title: str = 'hist collection',
-            create_new_canvas: bool = False,
-            canvas: Union[ROOT.TCanvas, None] = None) -> None:
+        self,
+        hist_list: List["TH1Tool"],
+        name: str = "hist collection",
+        title: str = "hist collection",
+        create_new_canvas: bool = False,
+        canvas: Union[ROOT.TCanvas, None] = None,
+    ) -> None:
         """Inits HistCollection with a list of TH1Tool objects."""
         self._canvas = canvas
         self._name = name
@@ -41,17 +42,17 @@ class HistCollection(object):
 
     def create_canvas(self) -> None:
         """Creats new canvas for drawing."""
-        self._canvas = ROOT.TCanvas(self._name + "_col", self._title + "_col",
-                                    800, 600)
+        self._canvas = ROOT.TCanvas(self._name + "_col", self._title + "_col", 800, 600)
 
     def draw(
-            self,
-            draw_options: str = "",
-            legend_title: str = "legend title",
-            legend_paras: list = [0.75, 0.75, 0.9, 0.9],
-            draw_norm: bool = False,
-            remove_empty_ends: bool = False,
-            norm_factor: float = 1.) -> None:
+        self,
+        draw_options: str = "",
+        legend_title: str = "legend title",
+        legend_paras: list = [0.75, 0.75, 0.9, 0.9],
+        draw_norm: bool = False,
+        remove_empty_ends: bool = False,
+        norm_factor: float = 1.0,
+    ) -> None:
         """Plots HistCollection on canvas.
 
         Args:
@@ -76,7 +77,7 @@ class HistCollection(object):
             hist.get_hist().SetStats(0)
             #
             if draw_norm:
-                hist.update_config('y_axis', 'SetTitle', "")
+                hist.update_config("y_axis", "SetTitle", "")
                 total_weight = hist.get_hist().Integral("width")
                 if total_weight != 0:
                     hist.get_hist().Scale(1 / total_weight)
@@ -98,21 +99,24 @@ class HistCollection(object):
         if x_max_use + 1 < hist.get_hist().GetNbinsX():
             x_max_use += 1
         if remove_empty_ends:
-            self._hist_list[0].get_hist().GetXaxis().SetRange(
-                x_min_use, x_max_use)
-        self._hist_list[0].get_hist().GetYaxis().SetRangeUser(
-            0, maximum_height * 1.4)
-        self._canvas.BuildLegend(legend_paras[0], legend_paras[1],
-                                 legend_paras[2], legend_paras[3],
-                                 legend_title)
+            self._hist_list[0].get_hist().GetXaxis().SetRange(x_min_use, x_max_use)
+        self._hist_list[0].get_hist().GetYaxis().SetRangeUser(0, maximum_height * 1.4)
+        self._canvas.BuildLegend(
+            legend_paras[0],
+            legend_paras[1],
+            legend_paras[2],
+            legend_paras[3],
+            legend_title,
+        )
         self._hist_list[0].get_hist().SetTitle(self._name)
         self._canvas.Update()
 
     def save(
-            self,
-            save_dir: Union[str, None] = None,
-            save_file_name: str = None,
-            save_format: str = 'png') -> None:
+        self,
+        save_dir: Union[str, None] = None,
+        save_file_name: str = None,
+        save_format: str = "png",
+    ) -> None:
         """Saves the plot on canvas to file.
 
         The plot will be saved to 'save_dir/save_file_name.save_format'.
@@ -140,15 +144,16 @@ class RatioPlot(object):
     """
 
     def __init__(
-            self,
-            hist_numerator: "TH1Tool",
-            hist_denominator: "TH1Tool",
-            name: str = "hist ratio",
-            title: str = "hist ratio",
-            x_title: str = "var",
-            y_title: str = "data/bkg",
-            create_new_canvas: bool = False,
-            canvas: Union[ROOT.TCanvas, None] = None) -> None:
+        self,
+        hist_numerator: "TH1Tool",
+        hist_denominator: "TH1Tool",
+        name: str = "hist ratio",
+        title: str = "hist ratio",
+        x_title: str = "var",
+        y_title: str = "data/bkg",
+        create_new_canvas: bool = False,
+        canvas: Union[ROOT.TCanvas, None] = None,
+    ) -> None:
         """Inits RatioPlot with numerator/denominator histograms."""
         self._canvas = canvas
         self.name = name
@@ -170,15 +175,15 @@ class RatioPlot(object):
                 "SetMaximum": 1.5,
                 "SetStats": 0,
                 "SetTitle": "",
-                "SetFillColor": ROOT.kGray
+                "SetFillColor": ROOT.kGray,
             },
             "x_axis": {
                 "SetTitle": self.x_title,
                 "SetTitleSize": 20,
                 "SetTitleFont": 43,
-                "SetTitleOffset": 4.,
+                "SetTitleOffset": 4.0,
                 "SetLabelFont": 43,
-                "SetLabelSize": 15
+                "SetLabelSize": 15,
             },
             "y_axis": {
                 "SetTitle": self.y_title,
@@ -187,19 +192,17 @@ class RatioPlot(object):
                 "SetTitleFont": 43,
                 "SetTitleOffset": 1,
                 "SetLabelFont": 43,
-                "SetLabelSize": 15
-            }
+                "SetLabelSize": 15,
+            },
         }
 
     def create_canvas(self) -> None:
         """Creats new canvas for drawing."""
         self._canvas = ROOT.TCanvas(
-            self.name + "_ratio", self.title + "_ratio", 800, 600)
+            self.name + "_ratio", self.title + "_ratio", 800, 600
+        )
 
-    def draw(
-        self,
-        draw_options: str = "e3"
-    ):
+    def draw(self, draw_options: str = "e3"):
         """Plots HistCollection on canvas.
 
         Args:
@@ -229,16 +232,14 @@ class TH1Tool(object):
     """
 
     def __init__(
-            self,
-            name: str,
-            title: str,
-            nbin: int = 50,
-            xlow: float = -100,
-            xup: float = 100,
-            config: Union[str, Cfg_Dict] = {},
-            create_new_canvas: 'bool' = False,
-            canvas: 'TCanvas' = None,
-            canvas_id: int = 1) -> None:
+        self,
+        name: str,
+        title: str,
+        config: Union[str, Cfg_Dict] = {},
+        create_new_canvas: "bool" = False,
+        canvas: "TCanvas" = None,
+        canvas_id: int = 1,
+    ) -> None:
         """Inits TH1Tool.
 
         Note:
@@ -294,15 +295,18 @@ class TH1Tool(object):
         """
         config = self.config
         for section in config:
-            if section == 'hist':
-                config_hist = config['hist']
+            if section == "hist":
+                config_hist = config["hist"]
                 self.apply_config_hist(config_hist)
-            elif section == 'x_axis':
-                config_x_axis = config['x_axis']
+            elif section == "x_axis":
+                config_x_axis = config["x_axis"]
                 self.apply_config_x_axis(config_x_axis)
-            elif section == 'y_axis':
-                config_y_axis = config['y_axis']
+            elif section == "y_axis":
+                config_y_axis = config["y_axis"]
                 self.apply_config_y_axis(config_y_axis)
+            elif section == "z_axis":
+                config_z_axis = config["z_axis"]
+                self.apply_config_z_axis(config_z_axis)
             else:
                 ValueError(
                     "Unsupported config section. Please change your config or add support."
@@ -314,8 +318,9 @@ class TH1Tool(object):
         for item in config:
             self.apply_single_config(self._hist, "hist", item)
 
-    def apply_config_axis(self, axis: ROOT.TAxis, axis_section: str,
-                          config: Cfg_Dict) -> None:
+    def apply_config_axis(
+        self, axis: ROOT.TAxis, axis_section: str, config: Cfg_Dict
+    ) -> None:
         """Applys axis config."""
         for item in config:
             self.apply_single_config(axis, axis_section, item)
@@ -323,18 +328,24 @@ class TH1Tool(object):
     def apply_config_x_axis(self, config: Cfg_Dict) -> None:
         """Applys x axis config."""
         x_axis = self._hist.GetXaxis()
-        self.apply_config_axis(x_axis, 'x_axis', config)
+        self.apply_config_axis(x_axis, "x_axis", config)
 
     def apply_config_y_axis(self, config: Cfg_Dict) -> None:
         """Applys y axis config."""
         y_axis = self._hist.GetYaxis()
-        self.apply_config_axis(y_axis, 'y_axis', config)
+        self.apply_config_axis(y_axis, "y_axis", config)
+
+    def apply_config_z_axis(self, config: Cfg_Dict) -> None:
+        """Applys z axis config."""
+        z_axis = self._hist.GetZaxis()
+        self.apply_config_axis(z_axis, "z_axis", config)
 
     def apply_single_config(
-            self,
-            apply_object: Union[ROOT.TH1, ROOT.TAxis],
-            section_name: str,
-            config_name: str) -> None:
+        self,
+        apply_object: Union[ROOT.TH1, ROOT.TAxis],
+        section_name: str,
+        config_name: str,
+    ) -> None:
         """Applys single config with mutable quantity inputs."""
         config_value = self.config[section_name][config_name]
         if type(config_value) is list:
@@ -345,37 +356,40 @@ class TH1Tool(object):
             if num_config_value == 1:
                 getattr(apply_object, config_name)(config_value)
             elif num_config_value == 2:
-                getattr(apply_object, config_name)(config_value[0],
-                                                   config_value[1])
+                getattr(apply_object, config_name)(config_value[0], config_value[1])
             elif num_config_value == 3:
-                getattr(apply_object,
-                        config_name)(config_value[0], config_value[1],
-                                     config_value[2])
+                getattr(apply_object, config_name)(
+                    config_value[0], config_value[1], config_value[2]
+                )
             elif num_config_value == 4:
-                getattr(apply_object,
-                        config_name)(config_value[0], config_value[1],
-                                     config_value[2], config_value[3])
+                getattr(apply_object, config_name)(
+                    config_value[0], config_value[1], config_value[2], config_value[3]
+                )
             elif num_config_value == 5:
-                getattr(apply_object,
-                        config_name)(config_value[0], config_value[1],
-                                     config_value[2], config_value[3],
-                                     config_value[4])
+                getattr(apply_object, config_name)(
+                    config_value[0],
+                    config_value[1],
+                    config_value[2],
+                    config_value[3],
+                    config_value[4],
+                )
             elif num_config_value == 6:
-                getattr(apply_object,
-                        config_name)(config_value[0], config_value[1],
-                                     config_value[2], config_value[3],
-                                     config_value[4], config_value[5])
+                getattr(apply_object, config_name)(
+                    config_value[0],
+                    config_value[1],
+                    config_value[2],
+                    config_value[3],
+                    config_value[4],
+                    config_value[5],
+                )
             else:
                 ValueError("Invalid num_config_value.")
         except:
             ValueError("Failed setting for:", config_name)
 
     def build_legend(
-            self,
-            x1: float = 0.8,
-            y1: float = 0.75,
-            x2: float = 0.9,
-            y2: float = 0.9) -> None:
+        self, x1: float = 0.8, y1: float = 0.75, x2: float = 0.9, y2: float = 0.9
+    ) -> None:
         """Build legend on the canvas.
 
         Cfgs:
@@ -388,8 +402,7 @@ class TH1Tool(object):
 
     def create_canvas(self) -> None:
         """Creats new canvas for drawing."""
-        self._canvas = ROOT.TCanvas(self.name + "_th1", self.title + "_th1",
-                                    800, 600)
+        self._canvas = ROOT.TCanvas(self.name + "_th1", self.title + "_th1", 800, 600)
         self._canvas_id = 0
 
     def draw(self, draw_options: str = "", log_scale=False) -> None:
@@ -454,10 +467,11 @@ class TH1Tool(object):
             ValueError("Unsupported config input type.")
 
     def save(
-            self,
-            save_dir: Union[str, None] = None,
-            save_file_name: Union[str, None] = None,
-            save_format: [str] = 'png') -> None:
+        self,
+        save_dir: Union[str, None] = None,
+        save_file_name: Union[str, None] = None,
+        save_format: [str] = "png",
+    ) -> None:
         """Saves plots to specified path."""
         if save_dir is None:
             save_dir = "./hists"
@@ -476,7 +490,7 @@ class TH1Tool(object):
         self._canvas = canvas
 
     def set_config(self, config: Cfg_Dict) -> None:
-        """Sets hisogram configurations."""
+        """Sets histogram configurations."""
         self.config.update(self.parse_config(config))
         self._config_applied = False
 
@@ -484,10 +498,12 @@ class TH1Tool(object):
         """Sets hist using external histogram."""
         self._hist = hist
 
+    def set_palette(self, palette: str) -> None:
+        ROOT.gStyle.SetPalette(getattr(ROOT, palette))
+
     def update_config(
-            self, section: str,
-            item: str,
-            value: Union[str, int, float, list]) -> None:
+        self, section: str, item: str, value: Union[str, int, float, list]
+    ) -> None:
         """Updates certain configuration.
 
         Note:
@@ -509,27 +525,26 @@ class TH1DTool(TH1Tool):
     """ROOT TH1D class wrapper for easy handling."""
 
     def __init__(
-            self,
-            name: str,
-            title: str,
-            nbin: int = 50,
-            xlow: float = -100,
-            xup: float = 100,
-            config: Cfg_Dict = {},
-            create_new_canvas: bool = False,
-            canvas: Union[ROOT.TCanvas, None] = None,
-            canvas_id: int = 1) -> None:
+        self,
+        name: str,
+        title: str,
+        nbin: int = 50,
+        xlow: float = -100,
+        xup: float = 100,
+        config: Cfg_Dict = {},
+        create_new_canvas: bool = False,
+        canvas: Union[ROOT.TCanvas, None] = None,
+        canvas_id: int = 1,
+    ) -> None:
         """Inits TH1DTool"""
         super().__init__(
             name,
             title,
-            nbin=nbin,
-            xlow=xlow,
-            xup=xup,
             config=config,
             create_new_canvas=create_new_canvas,
             canvas=canvas,
-            canvas_id=canvas_id)
+            canvas_id=canvas_id,
+        )
         self._hist = ROOT.TH1D(name, title, nbin, xlow, xup)
         self.nbin = nbin
         self.xlow = xlow
@@ -546,27 +561,26 @@ class TH1FTool(TH1Tool):
     """ROOT TH1F class wrapper for easy handling."""
 
     def __init__(
-            self,
-            name: str,
-            title: str,
-            nbin: int = 50,
-            xlow: float = -100,
-            xup: float = 100,
-            config: Cfg_Dict = {},
-            create_new_canvas: bool = False,
-            canvas: Union[ROOT.TCanvas, None] = None,
-            canvas_id: int = 1) -> None:
+        self,
+        name: str,
+        title: str,
+        nbin: int = 50,
+        xlow: float = -100,
+        xup: float = 100,
+        config: Cfg_Dict = {},
+        create_new_canvas: bool = False,
+        canvas: Union[ROOT.TCanvas, None] = None,
+        canvas_id: int = 1,
+    ) -> None:
         """Inits TH1FTool"""
         super().__init__(
             name,
             title,
-            nbin=nbin,
-            xlow=xlow,
-            xup=xup,
             config=config,
             create_new_canvas=create_new_canvas,
             canvas=canvas,
-            canvas_id=canvas_id)
+            canvas_id=canvas_id,
+        )
         self._hist = ROOT.TH1F(name, title, nbin, xlow, xup)
         self.nbin = nbin
         self.xlow = xlow
@@ -579,16 +593,101 @@ class TH1FTool(TH1Tool):
         self._hist = ROOT.TH1F(self.name, self.title, self.nbin, xlow, xup)
 
 
+class TH2Tool(TH1Tool):
+    """ROOT Th2 class wrapper for easy handling.
+
+    Note:
+        Base class, do not use directly.
+        
+    """
+
+    def __init__(
+        self,
+        name: str,
+        title: str,
+        config: Cfg_Dict = {},
+        create_new_canvas: bool = False,
+        canvas: Union[ROOT.TCanvas, None] = None,
+        canvas_id: int = 1,
+    ) -> None:
+        """Inits TH1DTool"""
+        super().__init__(
+            name,
+            title,
+            config=config,
+            create_new_canvas=create_new_canvas,
+            canvas=canvas,
+            canvas_id=canvas_id,
+        )
+
+    def fill_hist(self, fill_array_x, fill_array_y, weight_array=None):
+        """Fills the histogram with 2D array."""
+        if len(fill_array_x) != len(fill_array_y):
+            warnings.warn(
+                "Different length of fill array x/y, using the short length. x length = {}, y length = {}".format(
+                    len(fill_array_x), len(fill_array_y)
+                )
+            )
+            array_len = min(len(fill_array_x), len(fill_array_y))
+        else:
+            array_len = len(fill_array_x)
+        if weight_array is None:
+            for index in range(array_len):
+                self._hist.Fill(fill_array_x[index], fill_array_y[index])
+        else:
+            for index in range(array_len):
+                self._hist.Fill(
+                    fill_array_x[index], fill_array_y[index], weight_array[index]
+                )
+
+
+class TH2FTool(TH2Tool):
+    """ROOT TH1F class wrapper for easy handling."""
+
+    def __init__(
+        self,
+        name: str,
+        title: str,
+        nbinx: int = 50,
+        xlow: float = -100,
+        xup: float = 100,
+        nbiny: int = 50,
+        ylow: float = -100,
+        yup: float = 100,
+        config: Cfg_Dict = {},
+        create_new_canvas: bool = False,
+        canvas: Union[ROOT.TCanvas, None] = None,
+        canvas_id: int = 1,
+    ) -> None:
+        """Inits TH1FTool"""
+        super().__init__(
+            name,
+            title,
+            config=config,
+            create_new_canvas=create_new_canvas,
+            canvas=canvas,
+            canvas_id=canvas_id,
+        )
+        self._hist = ROOT.TH2F(name, title, nbinx, xlow, xup, nbiny, ylow, yup)
+        self.nbinx = nbinx
+        self.xlow = xlow
+        self.xup = xup
+        self.nbiny = nbiny
+        self.ylow = ylow
+        self.yup = yup
+
+
 class THStackTool(object):
     """ROOT THStack class wrapper for easy handing"""
 
     def __init__(
-            self,
-            name: str,
-            title: str,
-            hist_list: List["TH1Tool"],
-            create_new_canvas: bool = False,
-            canvas: Union[ROOT.TCanvas, None] = None) -> None:
+        self,
+        name: str,
+        title: str,
+        hist_list: List["TH1Tool"],
+        create_new_canvas: bool = False,
+        canvas: Union[ROOT.TCanvas, None] = None,
+    ) -> None:
         """Inits THStackTool."""
         super().__init__()
         self.name = name
@@ -605,11 +704,8 @@ class THStackTool(object):
             self._hist_stack.Add(hist.get_hist())
 
     def build_legend(
-            self,
-            x1: float = 0.8,
-            y1: float = 0.75,
-            x2: float = 0.9,
-            y2: float = 0.9) -> None:
+        self, x1: float = 0.8, y1: float = 0.75, x2: float = 0.9, y2: float = 0.9
+    ) -> None:
         """Build legend on the canvas.
 
         Cfgs:
@@ -622,8 +718,9 @@ class THStackTool(object):
 
     def create_canvas(self) -> None:
         """Creats new canvas for drawing."""
-        self._canvas = ROOT.TCanvas(self.name + "_stack",
-                                    self.title + "_stack", 800, 600)
+        self._canvas = ROOT.TCanvas(
+            self.name + "_stack", self.title + "_stack", 800, 600
+        )
 
     def draw(self, draw_cfg="", log_scale=False):
         """Makes the plot.
@@ -632,7 +729,6 @@ class THStackTool(object):
             draw_options: Options applied when calling draw function in ROOT.
 
         """
-        ROOT.gStyle.SetPalette(ROOT.kPastel)
         self._canvas.cd()
         if log_scale:
             self._canvas.SetLogy(2)
@@ -666,10 +762,11 @@ class THStackTool(object):
         return total_weights
 
     def save(
-            self,
-            save_dir: Union[str, None] = None,
-            save_file_name: str = None,
-            save_format: str = 'png') -> None:
+        self,
+        save_dir: Union[str, None] = None,
+        save_file_name: str = None,
+        save_format: str = "png",
+    ) -> None:
         """Saves plots to specified path."""
         if save_dir is None:
             save_dir = os.getcwd() + "/hist_stacks"
@@ -687,3 +784,6 @@ class THStackTool(object):
     def set_canvas(self, canvas: ROOT.TCanvas) -> None:
         """Sets canvas from external."""
         self._canvas = canvas
+
+    def set_palette(self, palette: str) -> None:
+        ROOT.gStyle.SetPalette(getattr(ROOT, palette))
