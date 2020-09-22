@@ -11,43 +11,43 @@ ROOT.gROOT.SetBatch(ROOT.kTRUE)
 
 
 def parse_bool(plot_config, section, option):
-    value = plot_config.get(section, option)
-    if value:
-        return plot_config.getboolean(section, option)
-    else:
-        return None
+    if plot_config.has_option(section, option):
+        value = plot_config.get(section, option)
+        if value:
+            return plot_config.getboolean(section, option)
+    return None
 
 
 def parse_float(plot_config, section, option):
-    value = plot_config.get(section, option)
-    if value:
-        return float(value)
-    else:
-        return None
+    if plot_config.has_option(section, option):
+        value = plot_config.get(section, option)
+        if value:
+            return float(value)
+    return None
 
 
 def parse_float_list(plot_config, section, option):
-    value = plot_config.get(section, option)
-    if value:
-        return [float(item.strip()) for item in value.split(",")]
-    else:
-        return []
+    if plot_config.has_option(section, option):
+        value = plot_config.get(section, option)
+        if value:
+            return [float(item.strip()) for item in value.split(",")]
+    return []
 
 
 def parse_int(plot_config, section, option):
-    value = plot_config.get(section, option)
-    if value:
-        return int(value)
-    else:
-        return None
+    if plot_config.has_option(section, option):
+        value = plot_config.get(section, option)
+        if value:
+            return int(value)
+    return None
 
 
 def parse_str_list(plot_config, section, option):
-    value = plot_config.get(section, option)
-    if value:
-        return [item.strip() for item in value.split(",")]
-    else:
-        return []
+    if plot_config.has_option(section, option):
+        value = plot_config.get(section, option)
+        if value:
+            return [item.strip() for item in value.split(",")]
+    return []
 
 
 def plot_brazilian(plot_config):
@@ -119,9 +119,10 @@ def plot_brazilian(plot_config):
     median_line.SetLineWidth(2)
     median_line.SetLineStyle(2)
     median_line.Draw("L same")
-    observed_line.SetLineColor(ROOT.kRed)
-    observed_line.SetLineWidth(2)
-    observed_line.Draw("L same")
+    if parse_float_list(plot_config, "INPUT", "upper_limits_observed"):
+        observed_line.SetLineColor(ROOT.kRed)
+        observed_line.SetLineWidth(2)
+        observed_line.Draw("L same")
 
     ROOT.gPad.SetTicks(1, 1)
     frame.Draw("sameaxis")
