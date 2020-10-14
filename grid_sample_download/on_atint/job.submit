@@ -12,4 +12,4 @@ request_memory = 500MB
 
 JobBatchName = download_$(sample_name)
 
-queue sample_name from sample_list_test.txt
+queue sample_name from sample_list.txt
