@@ -28,35 +28,34 @@ def plot_brazilian(plot_config, times_xsec=False):
     xsecs = input_dict["y_points_collect"][6]
     for i in range(num_points):
         if times_xsec:
-            # median
-            median_line.SetPoint(i, xs[i], ys_collect[0][i] * xsecs[i])
-            # + 1 sigma
-            band_1sig.SetPoint(i, xs[i], ys_collect[1][i] * xsecs[i])
-            # + 2 sigma
-            band_2sig.SetPoint(i, xs[i], ys_collect[2][i] * xsecs[i])
-            # - 1 sigma
-            band_1sig.SetPoint(
-                2 * num_points - 1 - i, xs[i], ys_collect[3][i] * xsecs[i]
-            )
-            # - 2 sigma
-            band_2sig.SetPoint(
-                2 * num_points - 1 - i, xs[i], ys_collect[4][i] * xsecs[i]
-            )
-            # observed
-            observed_line.SetPoint(i, xs[i], ys_collect[5][i] * xsecs[i])
+            x = xs[i]
+            y0 = ys_collect[0][i] * xsecs[i]
+            y_p_sig = ys_collect[1][i] * xsecs[i]
+            y_p_2sig = ys_collect[2][i] * xsecs[i]
+            y_n_sig = ys_collect[3][i] * xsecs[i]
+            y_n_2sig = ys_collect[4][i] * xsecs[i]
+            y_obs = ys_collect[5][i] * xsecs[i]
         else:
-            # median
-            median_line.SetPoint(i, xs[i], ys_collect[0][i])
-            # + 1 sigma
-            band_1sig.SetPoint(i, xs[i], ys_collect[1][i])
-            # + 2 sigma
-            band_2sig.SetPoint(i, xs[i], ys_collect[2][i])
-            # - 1 sigma
-            band_1sig.SetPoint(2 * num_points - 1 - i, xs[i], ys_collect[3][i])
-            # - 2 sigma
-            band_2sig.SetPoint(2 * num_points - 1 - i, xs[i], ys_collect[4][i])
-            # observed
-            observed_line.SetPoint(i, xs[i], ys_collect[5][i])
+            x = xs[i]
+            y0 = ys_collect[0][i]
+            y_p_sig = ys_collect[1][i]
+            y_p_2sig = ys_collect[2][i]
+            y_n_sig = ys_collect[3][i]
+            y_n_2sig = ys_collect[4][i]
+            y_obs = ys_collect[5][i]
+        # median
+        median_line.SetPoint(i, xs[i], y0)
+        # + 1 sigma
+        band_1sig.SetPoint(i, xs[i], y_p_sig)
+        # + 2 sigma
+        band_2sig.SetPoint(i, xs[i], y_p_2sig)
+        # - 1 sigma
+        band_1sig.SetPoint(2 * num_points - 1 - i, xs[i], y_n_sig)
+        # - 2 sigma
+        band_2sig.SetPoint(2 * num_points - 1 - i, xs[i], y_n_2sig)
+        # observed
+        observed_line.SetPoint(i, xs[i], y_obs)
+        print(x, y0, y_p_sig, y_p_2sig, y_n_sig, y_n_2sig, y_obs)
 
     # plot ratio limit
     width = parse_int(plot_config, "PLOT", "canvas_width")
